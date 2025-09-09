@@ -6,7 +6,7 @@ from threading import Thread
 
 # بيانات البوت
 TOKEN = "8216174167:AAHlAoMrf2BTEQfLhRXK7GJ11yqAtFMaX28"
-CHAT_ID = "@win_bettingMa"  # 👈 اسم المستخدم ديال القناة/المجموعة
+CHAT_ID = "@win_bettingMa"  # 👈 اسم القناة أو المجموعة
 
 # صورة + نص
 PHOTO_ID = "AgACAgQAAxkBAAMDaLt2SIF0r0N8lc80W9OByp9ZOkcAAuTRMRt3jOFRLgxgK4a4BjoBAAMCAAN5AAM2BA"
@@ -39,13 +39,20 @@ def send_photo(photo_id, caption, parse_mode="Markdown"):
         "parse_mode": parse_mode,
         "disable_web_page_preview": False
     }
-    requests.post(url, json=data)
-    print("✅ تم نشر الرسالة مع الصورة.")
+    r = requests.post(url, data=data)
+    print("✅ تم نشر الرسالة مع الصورة." if r.status_code == 200 else r.text)
 
-# جدولة النشر يومياً
+# جدولة النشر انطلاقاً من لحظة التشغيل
 def schedule_jobs():
-    # النشر يومياً مع منتصف الليل 00:00 بتوقيت المغرب
-    schedule.every().day.at("00:00").do(send_photo, PHOTO_ID, MESSAGE_TEXT)
+    # نشر مباشرة عند تشغيل البوت
+    send_photo(PHOTO_ID, MESSAGE_TEXT)
+
+    # الحصول على الوقت الحالي
+    now = time.strftime("%H:%M")  # مثل "22:15"
+    print(f"⏰ البوت سيتكرر يومياً على الساعة: {now}")
+
+    # برمجة النشر يومياً في نفس الساعة
+    schedule.every().day.at(now).do(send_photo, PHOTO_ID, MESSAGE_TEXT)
 
     while True:
         schedule.run_pending()
@@ -64,6 +71,7 @@ def run():
 def keep_alive():
     Thread(target=run).start()
 
-# تشغيل
-keep_alive()
-schedule_jobs()
+# تشغيل Flask + Scheduler مع بعض
+if __name__ == "__main__":
+    keep_alive()
+    Thread(target=schedule_jobs).start()
